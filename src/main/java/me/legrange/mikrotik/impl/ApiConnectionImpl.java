@@ -255,20 +255,24 @@ public final class ApiConnectionImpl extends ApiConnection {
                 } catch (MikrotikApiException ex) {
                     continue;
                 }
-                ResultListener l = listeners.get(res.getTag());
-                if (l != null) {
-                    if (res instanceof Result) {
-                        l.receive((Result) res);
-                    } else if (res instanceof Done) {
-                        if (l instanceof SyncListener) {
-                            ((SyncListener) l).completed((Done) res);
-                        } else {
-                            l.completed();
+                if (res.getTag() != null) {
+                    ResultListener l = listeners.get(res.getTag());
+                    if (l != null) {
+                        if (res instanceof Result) {
+                            l.receive((Result) res);
+                        } else if (res instanceof Done) {
+                            if (l instanceof SyncListener) {
+                                ((SyncListener) l).completed((Done) res);
+                            } else {
+                                l.completed();
+                            }
+                            listeners.remove(res.getTag());
+                        } else if (res instanceof Error) {
+                            l.error(new ApiCommandException((Error) res));
                         }
-                        listeners.remove(res.getTag());
-                    } else if (res instanceof Error) {
-                        l.error(new ApiCommandException((Error) res));
                     }
+                } else {
+                    nextTag();
                 }
             }
         }
