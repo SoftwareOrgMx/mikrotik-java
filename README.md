@@ -8,9 +8,9 @@ This project provides a Java client to manipulate Mikrotik routers using the rem
 
 ![Java CI with Maven](https://github.com/GideonLeGrange/mikrotik-java/workflows/Java%20CI%20with%20Maven/badge.svg)
 
-**The current stable version is 3.0.7**
+**The current stable version is 3.0.8**
 
-Version 3.0.7 fixes nested expressions when constructing complex queries using `and` and `or` expressions. See [#72](https://github.com/GideonLeGrange/mikrotik-java/issues/72) for more information
+Version 3.0.8 fixes a null pointer error 
 
 ### Changes in version 3.0:
 
@@ -35,7 +35,7 @@ Maven users can use the artifact from Maven Central with this dependency:
 <dependency>
   <groupId>me.legrange</groupId>
   <artifactId>mikrotik</artifactId>
-  <version>3.0.7</version>
+  <version>3.0.8</version>
 </dependency>
 ```
 
