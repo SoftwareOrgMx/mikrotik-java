@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.SocketFactory;
 import me.legrange.mikrotik.ApiConnection;
 import me.legrange.mikrotik.ApiConnectionException;
@@ -162,8 +163,7 @@ public final class ApiConnectionImpl extends ApiConnection {
     }
 
     private synchronized String nextTag() {
-        _tag++;
-        return Integer.toHexString(_tag);
+        return Integer.toHexString(_tag.incrementAndGet());
     }
 
     private Socket sock = null;
@@ -173,7 +173,7 @@ public final class ApiConnectionImpl extends ApiConnection {
     private Reader reader;
     private Processor processor;
     private final Map<String, ResultListener> listeners;
-    private Integer _tag = 0;
+    private final AtomicInteger _tag = new AtomicInteger(0);
     private int timeout = ApiConnection.DEFAULT_COMMAND_TIMEOUT;
 
     /**
@@ -186,7 +186,7 @@ public final class ApiConnectionImpl extends ApiConnection {
         }
 
         private String take() throws ApiConnectionException, ApiDataException {
-            Object val = null;
+            Object val;
             try {
                 val = queue.take();
             } catch (InterruptedException ex) {
@@ -223,7 +223,7 @@ public final class ApiConnectionImpl extends ApiConnection {
         private void put(Object data) {
             try {
                 queue.put(data);
-            } catch (InterruptedException ex) {
+            } catch (InterruptedException ignored) {
             }
         }
 
@@ -280,7 +280,7 @@ public final class ApiConnectionImpl extends ApiConnection {
         private void nextLine() throws ApiConnectionException, ApiDataException {
             if (lines.isEmpty()) {
                 String block = reader.take();
-                String parts[] = block.split("\n");
+                String[] parts = block.split("\n");
                 lines.addAll(Arrays.asList(parts));
             }
             line = lines.remove(0);
@@ -293,7 +293,7 @@ public final class ApiConnectionImpl extends ApiConnection {
         private String peekLine() throws ApiConnectionException, ApiDataException {
             if (lines.isEmpty()) {
                 String block = reader.take();
-                String parts[] = block.split("\n");
+                String[] parts = block.split("\n");
                 lines.addAll(Arrays.asList(parts));
             }
             return lines.get(0);
@@ -309,7 +309,6 @@ public final class ApiConnectionImpl extends ApiConnection {
                 case "!done":
                     return unpackDone();
                 case "!trap":
-                    return unpackError();
                 case "!halt":
                     return unpackError();
                 case "":
@@ -320,12 +319,10 @@ public final class ApiConnectionImpl extends ApiConnection {
 
         private Result unpackRe() throws ApiDataException, ApiConnectionException {
             nextLine();
-            int l = 0;
             Result res = new Result();
             while (!line.startsWith(("!"))) {
-                l++;
                 if (line.startsWith(("="))) {
-                    String parts[] = line.split("=", 3);
+                    String[] parts = line.split("=", 3);
                     if (parts.length == 3) {
                         if (!parts[2].endsWith("\r")) {
                             res.put(parts[1], unpackResult(parts[2]));
@@ -342,7 +339,7 @@ public final class ApiConnectionImpl extends ApiConnection {
                         throw new ApiDataException(String.format("Malformed line '%s'", line));
                     }
                 } else if (line.startsWith(".tag=")) {
-                    String parts[] = line.split("=", 2);
+                    String[] parts = line.split("=", 2);
                     if (parts.length == 2) {
                         res.setTag(parts[1]);
                     }
@@ -383,12 +380,12 @@ public final class ApiConnectionImpl extends ApiConnection {
 
                 while (!line.startsWith("!")) {
                     if (line.startsWith(".tag=")) {
-                        String parts[] = line.split("=", 2);
+                        String[] parts = line.split("=", 2);
                         if (parts.length == 2) {
                             done.setTag(parts[1]);
                         }
                     } else if (line.startsWith(("=ret"))) {
-                        String parts[] = line.split("=", 3);
+                        String[] parts = line.split("=", 3);
                         if (parts.length == 3) {
                             done.setHash(parts[2]);
                         } else {
@@ -412,7 +409,7 @@ public final class ApiConnectionImpl extends ApiConnection {
             if (hasNextLine()) {
                 while (!line.startsWith("!")) {
                     if (line.startsWith(".tag=")) {
-                        String parts[] = line.split("=", 2);
+                        String[] parts = line.split("=", 2);
                         if (parts.length == 2) {
                             err.setTag(parts[1]);
                         }
